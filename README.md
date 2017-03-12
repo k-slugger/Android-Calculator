@@ -1,2 +1,2 @@
 # Android-Calculator
-A basic android calculator
+A calculator app which supports expression evaluation
