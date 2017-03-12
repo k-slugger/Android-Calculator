@@ -1,15 +1,15 @@
 package com.example.shubham.yocalc;
 
-import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.Console;
+import java.util.ArrayList;
+import java.util.EmptyStackException;
+import java.util.Stack;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -17,86 +17,126 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        ((Button) findViewById(R.id.one)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.two)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.three)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.four)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.five)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.six)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.seven)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.eight)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.nine)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.zero)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.add)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.sub)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.mul)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.div)).setOnClickListener(btnHandler);
-        ((Button) findViewById(R.id.ans)).setOnClickListener(ansBtnHandler);
-        ((Button) findViewById(R.id.clr)).setOnClickListener(clrBtnHandler);
-        ((Button) findViewById(R.id.done)).setOnClickListener(doneBtnHandler);
+
+        ViewGroup group = (ViewGroup)findViewById(R.id.calcBtns);
+        ArrayList<View> childrenViews = new ArrayList<>();
+        childrenViews = getAllChildren(group);
+        for(View v: childrenViews) {
+            if(v instanceof Button) v.setOnClickListener(btnHandler);
+        }
+    }
+
+    private ArrayList<View> getAllChildren(View v) {
+        if (!(v instanceof ViewGroup)) {
+            ArrayList<View> viewArrayList = new ArrayList<>();
+            viewArrayList.add(v);
+            return viewArrayList;
+        }
+        ArrayList<View> result = new ArrayList<>();
+        ViewGroup viewGroup = (ViewGroup) v;
+        for (int i = 0; i < viewGroup.getChildCount(); i++) {
+            View child = viewGroup.getChildAt(i);
+            ArrayList<View> viewArrayList = new ArrayList<>();
+            viewArrayList.addAll(getAllChildren(child));
+            result.addAll(viewArrayList);
+        }
+        return result;
     }
 
     View.OnClickListener btnHandler = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            TextView numCon = (TextView) findViewById(R.id.numContainer);
-            String temp1 = numCon.getText().toString();
             Button b = (Button)v;
-            if(temp1 == "0")
-                temp1 = "";
-            temp1 = temp1 + "" + b.getText().toString();
-            numCon.setText(temp1);
-        }
-    };
-
-    View.OnClickListener ansBtnHandler = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            TextView numCon = (TextView) findViewById(R.id.numContainer);
-            String temp1 = numCon.getText().toString();
-            int answer=0;
-            try {
-                if (temp1.contains("+")) {
-                    String num[] = temp1.split("\\+");
-                    answer = Integer.parseInt(num[0]) + Integer.parseInt(num[1]);
-                }
-                else if (temp1.contains("−")) {
-                    String num[] = temp1.split("\\−");
-                    answer = Integer.parseInt(num[0]) - Integer.parseInt(num[1]);
-                }
-                else if (temp1.contains("×")) {
-                    String num[] = temp1.split("\\×");
-                    answer = Integer.parseInt(num[0]) * Integer.parseInt(num[1]);
-                }
-                else if (temp1.contains("÷")) {
-                    String num[] = temp1.split("\\÷");
-                    answer = Integer.parseInt(num[0]) / Integer.parseInt(num[1]);
-                }
-                numCon.setText(String.valueOf(answer));
+            TextView numberContainer = (TextView) findViewById(R.id.numContainer);
+            if (b.getId() == R.id.clr) {
+                numberContainer.setText("0");
+                return;
             }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-                //Log.e("YoCalc","Exception: " + e.getClass().getName());;
+            else if (b.getId() == R.id.ans) {
+                String expression = numberContainer.getText().toString();
+                String answer = evaluate(expression);
+                numberContainer.setText(answer);
+                return;
+            }
+            else {
+                String token = numberContainer.getText().toString();
+                if(token == "0")
+                    token = "";
+                token = token + "" + b.getText().toString();
+                numberContainer.setText(token);
             }
         }
     };
-    View.OnClickListener clrBtnHandler = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            TextView numCon = (TextView) findViewById(R.id.numContainer);
-            numCon.setText("0");
-        }
-    };
 
-    View.OnClickListener doneBtnHandler = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            TextView numCon = (TextView) findViewById(R.id.numContainer);
-            String temp1 = numCon.getText().toString();
-            Intent infoAct = new Intent(getBaseContext(), InfoActivity.class);
-            infoAct.putExtra("finalAns",temp1);
-            startActivity(infoAct);
+    public String evaluate(String expression)
+    {
+        char[] tokens = expression.toCharArray();
+
+        Stack<Double> values = new Stack<>();
+
+        Stack<Character> operators = new Stack<Character>();
+
+        try {
+            for (int i = 0; i < tokens.length; i++) {
+                if ((tokens[i] >= '0' && tokens[i] <= '9') || tokens[i] == '.') {
+                    StringBuffer sbuf = new StringBuffer();
+                    while (i < tokens.length && (tokens[i] >= '0' && tokens[i] <= '9' || tokens[i] == '.'))
+                        sbuf.append(tokens[i++]);
+                    i--;
+                    values.push(Double.parseDouble(sbuf.toString()));
+                } else if (tokens[i] == '(') {
+                    operators.push(tokens[i]);
+                } else if (tokens[i] == ')') {
+                    while (operators.peek() != '(') {
+                        values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+                    }
+                    operators.pop();
+                } else if (tokens[i] == '+' || tokens[i] == '-' || tokens[i] == '*' || tokens[i] == '/') {
+
+                    while (!operators.empty() && hasPrecedence(tokens[i], operators.peek())) {
+                        values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+                    }
+                    operators.push(tokens[i]);
+                }
+            }
+
+            while (!operators.empty()) {
+                values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+            }
+
+            return values.pop().toString();
+        } catch (EmptyStackException e) {
+            return "ERROR";
+        } catch (UnsupportedOperationException e) {
+            return "ERROR";
         }
-    };
+    }
+
+    public boolean hasPrecedence(char op1, char op2)
+    {
+        if (op2 == '(' || op2 == ')')
+            return false;
+        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
+            return false;
+        else
+            return true;
+    }
+
+    public double applyOp(char op, double b, double a)
+    {
+        switch (op)
+        {
+            case '+':
+                return a + b;
+            case '-':
+                return a - b;
+            case '*':
+                return a * b;
+            case '/':
+                if (b == 0)
+                    throw new UnsupportedOperationException("Cannot divide by zero");
+                return a / b;
+        }
+        return 0;
+    }
 }

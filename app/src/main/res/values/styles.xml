@@ -8,4 +8,14 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="CalcButtons">
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:scaleX">1.1</item>
+        <item name="android:scaleY">1.2</item>
+        <item name="android:minHeight">64dp</item>
+    </style>
+
 </resources>
